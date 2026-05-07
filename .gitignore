@@ -58,3 +58,4 @@ _8083_*
 # Runtime logs
 *.log
 logs/
+release/

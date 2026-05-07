@@ -1,4 +1,5 @@
 services:
+  # FastAPI 后端服务：提供 Nacos 配置、设备状态、Dashboard 和模拟器接口。
   nacos-api:
     build:
       context: ./backend
@@ -11,6 +12,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  # 旧静态演示前端：通过 Nginx 把 /api 反向代理到 nacos-api。
   nacos-web:
     build:
       context: ./frontend

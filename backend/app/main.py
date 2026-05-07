@@ -1,3 +1,9 @@
+"""FastAPI 后端主入口。
+
+本文件负责把 Nacos 配置读写、8083 前端兼容接口、Dashboard 聚合接口、
+硬件状态机模拟器接口统一注册到同一个 FastAPI 应用里。
+"""
+
 import asyncio
 import json
 import os
@@ -16,10 +22,12 @@ from app.hardware_state_machine import SIMULATOR
 try:
     import yaml
 except Exception:  # pragma: no cover
+    # PyYAML 是可选依赖；没有安装时只解析 JSON，接口仍然可以正常启动。
     yaml = None
 
 load_dotenv()
 
+# FastAPI 应用对象，所有路由都会挂载到这个 app 上。
 app = FastAPI(
     title="Nacos FastAPI Bridge",
     version="1.1.0",
@@ -32,6 +40,7 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
+# 允许访问后端的前端来源，开发期默认包含旧静态页和 8083 Vue + Vite 前端。
 raw_origins = os.getenv(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:9000,http://localhost:8083",
@@ -46,6 +55,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Nacos 和发布密钥配置全部来自环境变量，避免把真实地址或密钥写死进代码。
 NACOS_BASE_URL = os.getenv("NACOS_BASE_URL", "http://127.0.0.1:8848/nacos").rstrip("/")
 NACOS_USERNAME = os.getenv("NACOS_USERNAME", "").strip()
 NACOS_PASSWORD = os.getenv("NACOS_PASSWORD", "").strip()
@@ -53,12 +63,14 @@ PUBLISH_API_KEY = os.getenv("PUBLISH_API_KEY", "").strip()
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
+    """把环境变量解析成布尔值，兼容 true/yes/on/1 等常见写法。"""
     raw = os.getenv(name)
     if raw is None:
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+# 硬件状态机模拟器开关；真实硬件接入前，前端先通过这些模拟状态联调。
 USE_STATE_MACHINE_SIMULATOR = _env_bool("USE_STATE_MACHINE_SIMULATOR", True)
 SIMULATOR_AUTO_TICK = _env_bool("SIMULATOR_AUTO_TICK", True)
 SIMULATOR_TICK_SECONDS = max(1.0, float(os.getenv("SIMULATOR_TICK_SECONDS", "5")))
@@ -70,6 +82,8 @@ _simulator_task: asyncio.Task[None] | None = None
 
 
 class PublishConfigBody(BaseModel):
+    """发布 Nacos 配置时的请求体。"""
+
     data_id: str = Field(..., alias="dataId", min_length=1)
     group: str = Field(default="DEFAULT_GROUP")
     tenant: str | None = None
@@ -80,10 +94,14 @@ class PublishConfigBody(BaseModel):
 
 
 class HealthResponse(BaseModel):
+    """健康检查响应。"""
+
     status: str
 
 
 class ConfigItem(BaseModel):
+    """Nacos 配置项读取后的统一结构。"""
+
     data_id: str = Field(..., alias="dataId")
     group: str
     tenant: str | None = None
@@ -95,6 +113,8 @@ class ConfigItem(BaseModel):
 
 
 class ConfigReadResponse(BaseModel):
+    """读取 Nacos 配置的响应，兼容单配置读取和全量列表读取。"""
+
     mode: Literal["single", "all"]
     data_id: str | None = Field(default=None, alias="dataId")
     group: str | None = None
@@ -111,11 +131,15 @@ class ConfigReadResponse(BaseModel):
 
 
 class PublishConfigResponse(BaseModel):
+    """发布 Nacos 配置的响应。"""
+
     success: bool
     message: str
 
 
 class DeviceStatusRecord(BaseModel):
+    """8083 设备状态组件需要的单行统计数据。"""
+
     region: str = Field(..., min_length=1)
     device: str = Field(..., min_length=1)
     online: int = Field(..., ge=0)
@@ -123,11 +147,15 @@ class DeviceStatusRecord(BaseModel):
 
 
 class DeviceStatusOptionsResponse(BaseModel):
+    """设备状态筛选项响应。"""
+
     regions: list[str]
     devices: list[str]
 
 
 class DeviceStatusRecordsResponse(BaseModel):
+    """设备状态列表响应。"""
+
     records: list[DeviceStatusRecord]
     updated_at: str = Field(..., alias="updatedAt")
 
@@ -135,6 +163,8 @@ class DeviceStatusRecordsResponse(BaseModel):
 
 
 class DeviceStatusSummary(BaseModel):
+    """设备状态汇总数据。"""
+
     total_devices: int = Field(..., alias="totalDevices")
     online_devices: int = Field(..., alias="onlineDevices")
     offline_devices: int = Field(..., alias="offlineDevices")
@@ -144,11 +174,15 @@ class DeviceStatusSummary(BaseModel):
 
 
 class DeviceStatusSummaryResponse(BaseModel):
+    """设备状态汇总接口响应。"""
+
     summary: DeviceStatusSummary
     records: list[DeviceStatusRecord]
 
 
 class ApiResponse(BaseModel):
+    """通用 JSON 响应结构，新接口优先使用该结构。"""
+
     code: int = 200
     success: bool = True
     message: str = "操作成功"
@@ -156,15 +190,20 @@ class ApiResponse(BaseModel):
 
 
 class HardwareCommandBody(BaseModel):
+    """手动控制模拟硬件时的请求体。"""
+
     command: str = Field(..., min_length=1)
     reason: str = ""
     operator: str = "simulator"
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
+# 8083 旧前端使用“全部”作为筛选默认值，这里保持兼容。
 ALL_OPTION = "全部"
 DEFAULT_DEVICE_STATUS_FIELD = "deviceStatus.records"
 SHANGHAI_TZ = timezone(timedelta(hours=8))
+
+# 当未提供 Nacos dataId 时返回的兜底数据；开启模拟器后会优先从状态机聚合。
 DEMO_DEVICE_STATUS_RECORDS: list[dict[str, Any]] = [
     {"region": "A区", "device": "人员智能门/联锁门", "online": 120, "offline": 12},
     {"region": "A区", "device": "摄像机", "online": 86, "offline": 6},
@@ -182,6 +221,7 @@ DEMO_DEVICE_STATUS_RECORDS: list[dict[str, Any]] = [
 
 
 async def _run_simulator_loop() -> None:
+    """后台循环推进模拟器状态，让前端看到持续变化的数据。"""
     while True:
         SIMULATOR.tick()
         await asyncio.sleep(SIMULATOR_TICK_SECONDS)
@@ -189,6 +229,7 @@ async def _run_simulator_loop() -> None:
 
 @app.on_event("startup")
 async def _start_simulator_loop() -> None:
+    """服务启动时按配置启动模拟器后台任务。"""
     global _simulator_task
     if USE_STATE_MACHINE_SIMULATOR and SIMULATOR_AUTO_TICK and _simulator_task is None:
         _simulator_task = asyncio.create_task(_run_simulator_loop())
@@ -196,6 +237,7 @@ async def _start_simulator_loop() -> None:
 
 @app.on_event("shutdown")
 async def _stop_simulator_loop() -> None:
+    """服务关闭时取消模拟器后台任务，避免事件循环残留任务。"""
     global _simulator_task
     if _simulator_task is not None:
         _simulator_task.cancel()
@@ -203,10 +245,12 @@ async def _stop_simulator_loop() -> None:
 
 
 def _join_url(path: str) -> str:
+    """拼接 Nacos API 完整地址。"""
     return f"{NACOS_BASE_URL}{path}"
 
 
 def _parse_content(content: str) -> Any | None:
+    """把 Nacos 配置内容解析成 JSON/YAML 对象；解析失败返回 None。"""
     if not content:
         return None
 
@@ -225,6 +269,7 @@ def _parse_content(content: str) -> Any | None:
 
 
 def _extract_field(data: Any, field: str) -> tuple[Any, bool]:
+    """按 a.b.0.c 形式从 dict/list 中提取字段。"""
     current: Any = data
     for part in field.split("."):
         if isinstance(current, dict):
@@ -243,6 +288,7 @@ def _extract_field(data: Any, field: str) -> tuple[Any, bool]:
 
 
 def _check_publish_key(x_publish_key: str | None) -> None:
+    """校验发布配置接口的 X-Publish-Key。"""
     if not PUBLISH_API_KEY:
         raise HTTPException(
             status_code=503,
@@ -253,11 +299,13 @@ def _check_publish_key(x_publish_key: str | None) -> None:
 
 
 def _normalize_selector(value: str | None, *, default: str = ALL_OPTION) -> str:
+    """统一处理前端筛选参数，空值按“全部”处理。"""
     normalized = (value or "").strip()
     return normalized or default
 
 
 def _coerce_non_negative_int(value: Any, *, field_name: str, index: int) -> int:
+    """把外部配置中的 online/offline 字段转换成非负整数。"""
     if isinstance(value, bool):
         raise HTTPException(
             status_code=422,
@@ -281,6 +329,7 @@ def _coerce_non_negative_int(value: Any, *, field_name: str, index: int) -> int:
 
 
 def _coerce_device_status_records(raw: Any) -> list[DeviceStatusRecord]:
+    """把 Nacos 或模拟器数据转换成 8083 设备状态组件需要的记录列表。"""
     candidate = raw
     if isinstance(candidate, dict):
         if isinstance(candidate.get("records"), list):
@@ -326,6 +375,7 @@ def _coerce_device_status_records(raw: Any) -> list[DeviceStatusRecord]:
 
 
 def _get_demo_device_status_records() -> list[DeviceStatusRecord]:
+    """获取设备状态数据；模拟器开启时优先从状态机实时聚合。"""
     if USE_STATE_MACHINE_SIMULATOR:
         return [
             DeviceStatusRecord(**item)
@@ -335,6 +385,7 @@ def _get_demo_device_status_records() -> list[DeviceStatusRecord]:
 
 
 def _list_regions(records: list[DeviceStatusRecord]) -> list[str]:
+    """从设备状态记录中生成区域筛选项。"""
     seen: set[str] = set()
     regions = [ALL_OPTION]
     for record in records:
@@ -346,6 +397,7 @@ def _list_regions(records: list[DeviceStatusRecord]) -> list[str]:
 
 
 def _list_devices(records: list[DeviceStatusRecord], region: str = ALL_OPTION) -> list[str]:
+    """从设备状态记录中生成设备类型筛选项。"""
     seen: set[str] = set()
     devices = [ALL_OPTION]
     for record in records:
@@ -364,6 +416,7 @@ def _validate_device_status_filters(
     region: str,
     device: str,
 ) -> None:
+    """校验前端传入的区域和设备筛选值是否存在。"""
     valid_regions = _list_regions(records)
     if region not in valid_regions:
         raise HTTPException(status_code=400, detail=f"Unknown region: {region}")
@@ -379,6 +432,7 @@ def _filter_device_status_records(
     region: str,
     device: str,
 ) -> list[DeviceStatusRecord]:
+    """按区域和设备类型过滤设备状态记录。"""
     return [
         record
         for record in records
@@ -394,6 +448,7 @@ async def _load_device_status_records(
     tenant: str | None,
     field: str | None,
 ) -> list[DeviceStatusRecord]:
+    """加载设备状态记录；无 dataId 时返回模拟/兜底数据，有 dataId 时读取 Nacos。"""
     normalized_data_id = (data_id or "").strip()
     normalized_field = (field or "").strip()
 
@@ -423,10 +478,12 @@ async def _load_device_status_records(
 
 
 def _current_timestamp() -> str:
+    """返回上海时区 ISO 时间，用于接口 updatedAt 字段。"""
     return datetime.now(SHANGHAI_TZ).replace(microsecond=0).isoformat()
 
 
 async def _get_access_token(client: httpx.AsyncClient) -> str | None:
+    """按需登录 Nacos 并缓存 accessToken。"""
     global _cached_token, _token_expire_at
 
     if not NACOS_USERNAME or not NACOS_PASSWORD:
@@ -473,6 +530,7 @@ async def _nacos_request(
     form: dict[str, Any] | None = None,
     include_nacos_auth: bool = False,
 ) -> httpx.Response:
+    """统一封装 Nacos HTTP 请求，避免各接口重复处理鉴权和表单头。"""
     query = query or {}
     form = form or {}
 
@@ -497,6 +555,7 @@ async def _nacos_request(
 
 
 async def _get_single_config_content(data_id: str, group: str, tenant: str | None) -> str:
+    """读取单个 Nacos 配置内容。"""
     query: dict[str, Any] = {"dataId": data_id, "group": group}
     if tenant:
         query["tenant"] = tenant
@@ -522,6 +581,7 @@ async def _get_single_config_content(data_id: str, group: str, tenant: str | Non
     response_model=HealthResponse,
 )
 async def health() -> HealthResponse:
+    """健康检查接口，部署和负载均衡探活都调用这里。"""
     return HealthResponse(status="ok")
 
 
@@ -543,6 +603,11 @@ async def get_config(
     page_no: int = Query(1, alias="pageNo", ge=1),
     page_size: int = Query(200, alias="pageSize", ge=1, le=1000),
 ) -> ConfigReadResponse:
+    """读取 Nacos 配置。
+
+    dataId 为空时读取配置列表；dataId 不为空时读取单个配置。
+    field 参数用于在 JSON/YAML 配置里读取指定字段。
+    """
     data_id = data_id.strip()
 
     if data_id:
@@ -659,6 +724,7 @@ async def get_device_status_options(
     region: str = Query(ALL_OPTION),
     region_id: str | None = Query(None, alias="regionId"),
 ) -> DeviceStatusOptionsResponse:
+    """返回 8083 设备状态组件的筛选项。"""
     records = _get_demo_device_status_records()
     effective_region = _normalize_selector(region_id or region)
     _validate_device_status_filters(records, region=effective_region, device=ALL_OPTION)
@@ -690,6 +756,7 @@ async def get_device_status_records(
     tenant: str | None = Query(None),
     field: str | None = Query(DEFAULT_DEVICE_STATUS_FIELD),
 ) -> DeviceStatusRecordsResponse:
+    """返回 8083 设备状态组件的表格记录。"""
     effective_region = _normalize_selector(region_id or region)
     effective_device = _normalize_selector(device_type or device)
     records = await _load_device_status_records(
@@ -723,6 +790,7 @@ async def get_device_status_summary(
     device: str = Query(ALL_OPTION),
     device_type: str | None = Query(None, alias="deviceType"),
 ) -> DeviceStatusSummaryResponse:
+    """返回设备状态汇总和过滤后的记录。"""
     effective_region = _normalize_selector(region_id or region)
     effective_device = _normalize_selector(device_type or device)
     records = _get_demo_device_status_records()
@@ -755,6 +823,7 @@ async def get_device_status_summary(
     response_model=ApiResponse,
 )
 async def get_dashboard_overview() -> ApiResponse:
+    """返回保留 8083 前端需要的首页概览数据。"""
     records = _get_demo_device_status_records()
     snapshots = SIMULATOR.snapshot() if USE_STATE_MACHINE_SIMULATOR else []
     online_access = sum(
@@ -798,6 +867,7 @@ async def get_dashboard_overview() -> ApiResponse:
     response_model=ApiResponse,
 )
 async def get_simulator_summary() -> ApiResponse:
+    """查询硬件状态机模拟器整体统计。"""
     return ApiResponse(data=SIMULATOR.summary())
 
 
@@ -812,6 +882,7 @@ async def list_simulator_devices(
     device_type: str | None = Query(None, alias="deviceType"),
     online_status: str | None = Query(None, alias="onlineStatus"),
 ) -> ApiResponse:
+    """按区域、设备类型、在线状态查询模拟设备列表。"""
     items = SIMULATOR.snapshot(
         area_id=area_id,
         device_type=device_type,
@@ -834,6 +905,7 @@ async def list_simulator_devices(
     response_model=ApiResponse,
 )
 async def get_simulator_device(device_id: str) -> ApiResponse:
+    """查询单个模拟设备详情。"""
     device = SIMULATOR.get_device(device_id)
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device not found: {device_id}")
@@ -849,6 +921,7 @@ async def get_simulator_device(device_id: str) -> ApiResponse:
 async def tick_simulator(
     steps: int = Query(1, ge=1, le=100),
 ) -> ApiResponse:
+    """手动推进模拟器状态，主要用于开发调试和演示。"""
     return ApiResponse(message="模拟器状态已推进", data=SIMULATOR.tick(steps=steps))
 
 
@@ -862,6 +935,7 @@ async def command_simulator_device(
     device_id: str,
     body: HardwareCommandBody,
 ) -> ApiResponse:
+    """向模拟设备下发命令，用于验证前端控制流程。"""
     result = SIMULATOR.apply_command(
         device_id,
         command=body.command,
@@ -887,6 +961,7 @@ async def publish_config(
     body: PublishConfigBody,
     x_publish_key: str | None = Header(default=None, alias="X-Publish-Key"),
 ) -> PublishConfigResponse:
+    """发布配置到 Nacos，必须携带正确的 X-Publish-Key。"""
     _check_publish_key(x_publish_key)
 
     form: dict[str, Any] = {

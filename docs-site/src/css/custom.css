@@ -1,5 +1,6 @@
 @import "@scalar/api-reference-react/style.css";
 
+/* 文档站主题变量，保持文档和 OpenAPI 页面视觉一致。 */
 :root {
   --ifm-color-primary: #155eef;
   --ifm-color-primary-dark: #0f4ed0;
@@ -12,12 +13,14 @@
   --ifm-table-border-color: #d8dee8;
 }
 
+/* 深色模式下只调整外层 Docusaurus 背景，Scalar 内部样式由组件自己控制。 */
 html[data-theme="dark"] {
   --ifm-background-color: #111827;
   --ifm-navbar-background-color: #0f172a;
   --ifm-footer-background-color: #0f172a;
 }
 
+/* 首页头图区域，用于展示当前文档集版本口径。 */
 .heroBanner {
   padding: 56px 0 44px;
   background: #0f172a;
@@ -44,6 +47,7 @@ html[data-theme="dark"] {
   color: #dbeafe;
 }
 
+/* 首页快捷入口卡片网格。 */
 .quickGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -77,10 +81,12 @@ html[data-theme="dark"] {
   color: var(--ifm-color-content-secondary);
 }
 
+/* Scalar OpenAPI 页面外壳。 */
 .scalarShell {
   min-height: calc(100vh - 120px);
 }
 
+/* OpenAPI JSON 直链区域，便于调试文档文件是否可访问。 */
 .openapiLinks {
   display: flex;
   gap: 12px;

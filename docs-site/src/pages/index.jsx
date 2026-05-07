@@ -2,6 +2,7 @@ import React from "react";
 import Link from "@docusaurus/Link";
 import Layout from "@theme/Layout";
 
+// 文档站首页：给团队成员一个版本化入口，不承载具体 API 细节。
 export default function Home() {
   return (
     <Layout
@@ -21,6 +22,7 @@ export default function Home() {
       </header>
 
       <main className="quickGrid">
+        {/* 快捷卡片只链接到关键文档，完整目录在左侧边栏。 */}
         <Link className="quickCard" to="/docs/version-guide">
           <h2>版本说明</h2>
           <p>区分 LEGACY-FE、API-CURRENT、API-TARGET、SIM、OPENAPI 和 DOC 版本。</p>

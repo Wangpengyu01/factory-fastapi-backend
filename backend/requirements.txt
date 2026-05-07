@@ -1,4 +1,8 @@
+# FastAPI Web 框架。
 fastapi==0.115.12
+# ASGI 运行器，standard 包含开发期常用依赖。
 uvicorn[standard]==0.34.2
+# 访问 Nacos HTTP API 使用的异步客户端。
 httpx==0.28.1
+# 从 .env 读取本地环境变量。
 python-dotenv==1.1.0

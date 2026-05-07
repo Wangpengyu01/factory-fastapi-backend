@@ -1,5 +1,6 @@
 name: Python Backend
 
+# 推送 main 或创建 PR 时，自动检查 FastAPI 后端能否编译并导出 OpenAPI。
 on:
   push:
     branches: ["main"]
@@ -31,4 +32,3 @@ jobs:
       - name: Generate OpenAPI
         run: |
           python backend/scripts/generate_openapi.py
-

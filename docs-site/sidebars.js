@@ -1,3 +1,4 @@
+// 左侧文档目录按团队使用场景分组，避免所有文档堆在一个分类下。
 const sidebars = {
   tutorialSidebar: [
     {

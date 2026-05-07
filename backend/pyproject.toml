@@ -2,6 +2,7 @@
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+# Python 包信息和版本号；发版时需要和 VERSION、CHANGELOG.md 同步。
 [project]
 name = "factory-fastapi-backend"
 version = "0.1.0"
@@ -16,4 +17,3 @@ dependencies = [
 
 [tool.setuptools]
 packages = ["app"]
-

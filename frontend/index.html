@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nacos API Bridge Demo</title>
     <style>
+      /* 页面配色变量，方便后续统一调整演示页风格。 */
       :root {
         --bg: #f2f4f8;
         --card: #ffffff;
@@ -12,17 +13,20 @@
         --primary: #0f6cbd;
         --danger: #b42318;
       }
+      /* 主体背景只用于本地演示，不参与 8083 正式前端样式。 */
       body {
         margin: 0;
         background: linear-gradient(130deg, #eaf4ff 0%, var(--bg) 50%, #f6fff0 100%);
         color: var(--text);
         font-family: "Segoe UI", "PingFang SC", "Microsoft Yahei", sans-serif;
       }
+      /* 外层容器控制页面宽度，避免大屏下表单过宽。 */
       .wrap {
         max-width: 860px;
         margin: 24px auto;
         padding: 0 16px;
       }
+      /* 卡片承载 Nacos 读取和发布表单。 */
       .card {
         background: var(--card);
         border-radius: 14px;
@@ -34,6 +38,7 @@
         font-size: 24px;
       }
       .row {
+        /* 表单在桌面端四列展示，移动端通过媒体查询改成一列。 */
         display: grid;
         gap: 12px;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -54,10 +59,12 @@
         font-size: 14px;
       }
       textarea {
+        /* 配置内容通常较长，默认给足编辑高度。 */
         min-height: 220px;
         resize: vertical;
       }
       .btns {
+        /* 读取和发布两个按钮并排展示。 */
         display: grid;
         gap: 12px;
         margin: 12px 0;
@@ -83,6 +90,7 @@
         color: var(--danger);
       }
       @media (max-width: 760px) {
+        /* 小屏下改成单列表单，防止输入框被挤压。 */
         .row {
           grid-template-columns: 1fr;
         }
@@ -134,14 +142,17 @@
     </div>
 
     <script>
+      // 简化 DOM 查询，避免重复写 document.getElementById。
       const el = (id) => document.getElementById(id);
       const statusEl = el("status");
 
+      // 统一设置操作状态，成功和失败使用不同颜色。
       function setStatus(text, ok = true) {
         statusEl.className = `status ${ok ? "ok" : "err"}`;
         statusEl.textContent = text;
       }
 
+      // 根据表单内容拼接 Nacos 查询参数。
       function buildQuery() {
         const params = new URLSearchParams({
           group: el("group").value.trim() || "DEFAULT_GROUP",
@@ -155,6 +166,7 @@
         return params.toString();
       }
 
+      // 从 FastAPI 后端读取 Nacos 配置；dataId 为空时读取配置列表。
       async function loadConfig() {
         try {
           setStatus("Loading config...");
@@ -181,6 +193,7 @@
         }
       }
 
+      // 发布配置到 Nacos，必须填写 dataId 和发布密钥。
       async function publishConfig() {
         try {
           const dataId = el("dataId").value.trim();
@@ -216,6 +229,7 @@
         }
       }
 
+      // 绑定按钮事件，保持 HTML 和业务逻辑分离。
       el("btnLoad").addEventListener("click", loadConfig);
       el("btnPublish").addEventListener("click", publishConfig);
     </script>

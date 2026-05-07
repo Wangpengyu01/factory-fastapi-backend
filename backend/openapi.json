@@ -12,6 +12,7 @@
           "system"
         ],
         "summary": "Health check",
+        "description": "健康检查接口，部署和负载均衡探活都调用这里。",
         "operationId": "health_api_health_get",
         "responses": {
           "200": {
@@ -507,6 +508,7 @@
           "hardware-simulator"
         ],
         "summary": "Get hardware simulator summary",
+        "description": "查询硬件状态机模拟器整体统计。",
         "operationId": "get_simulator_summary_api_simulator_summary_get",
         "responses": {
           "200": {
@@ -528,6 +530,7 @@
           "hardware-simulator"
         ],
         "summary": "List simulated hardware devices",
+        "description": "按区域、设备类型、在线状态查询模拟设备列表。",
         "operationId": "list_simulator_devices_api_simulator_devices_get",
         "parameters": [
           {
@@ -609,6 +612,7 @@
           "hardware-simulator"
         ],
         "summary": "Get simulated hardware device detail",
+        "description": "查询单个模拟设备详情。",
         "operationId": "get_simulator_device_api_simulator_devices__device_id__get",
         "parameters": [
           {
@@ -651,6 +655,7 @@
           "hardware-simulator"
         ],
         "summary": "Advance simulator state",
+        "description": "手动推进模拟器状态，主要用于开发调试和演示。",
         "operationId": "tick_simulator_api_simulator_tick_post",
         "parameters": [
           {
@@ -696,6 +701,7 @@
           "hardware-simulator"
         ],
         "summary": "Send command to a simulated hardware device",
+        "description": "向模拟设备下发命令，用于验证前端控制流程。",
         "operationId": "command_simulator_device_api_simulator_devices__device_id__command_post",
         "parameters": [
           {
@@ -770,7 +776,8 @@
         "required": [
           "data"
         ],
-        "title": "ApiResponse"
+        "title": "ApiResponse",
+        "description": "通用 JSON 响应结构，新接口优先使用该结构。"
       },
       "ConfigItem": {
         "properties": {
@@ -822,7 +829,8 @@
           "group",
           "content"
         ],
-        "title": "ConfigItem"
+        "title": "ConfigItem",
+        "description": "Nacos 配置项读取后的统一结构。"
       },
       "ConfigReadResponse": {
         "properties": {
@@ -949,7 +957,8 @@
         "required": [
           "mode"
         ],
-        "title": "ConfigReadResponse"
+        "title": "ConfigReadResponse",
+        "description": "读取 Nacos 配置的响应，兼容单配置读取和全量列表读取。"
       },
       "DeviceStatusOptionsResponse": {
         "properties": {
@@ -973,7 +982,8 @@
           "regions",
           "devices"
         ],
-        "title": "DeviceStatusOptionsResponse"
+        "title": "DeviceStatusOptionsResponse",
+        "description": "设备状态筛选项响应。"
       },
       "DeviceStatusRecord": {
         "properties": {
@@ -1005,7 +1015,8 @@
           "online",
           "offline"
         ],
-        "title": "DeviceStatusRecord"
+        "title": "DeviceStatusRecord",
+        "description": "8083 设备状态组件需要的单行统计数据。"
       },
       "DeviceStatusRecordsResponse": {
         "properties": {
@@ -1026,7 +1037,8 @@
           "records",
           "updatedAt"
         ],
-        "title": "DeviceStatusRecordsResponse"
+        "title": "DeviceStatusRecordsResponse",
+        "description": "设备状态列表响应。"
       },
       "DeviceStatusSummary": {
         "properties": {
@@ -1054,7 +1066,8 @@
           "offlineDevices",
           "onlineRate"
         ],
-        "title": "DeviceStatusSummary"
+        "title": "DeviceStatusSummary",
+        "description": "设备状态汇总数据。"
       },
       "DeviceStatusSummaryResponse": {
         "properties": {
@@ -1074,7 +1087,8 @@
           "summary",
           "records"
         ],
-        "title": "DeviceStatusSummaryResponse"
+        "title": "DeviceStatusSummaryResponse",
+        "description": "设备状态汇总接口响应。"
       },
       "HTTPValidationError": {
         "properties": {
@@ -1116,7 +1130,8 @@
         "required": [
           "command"
         ],
-        "title": "HardwareCommandBody"
+        "title": "HardwareCommandBody",
+        "description": "手动控制模拟硬件时的请求体。"
       },
       "HealthResponse": {
         "properties": {
@@ -1129,7 +1144,8 @@
         "required": [
           "status"
         ],
-        "title": "HealthResponse"
+        "title": "HealthResponse",
+        "description": "健康检查响应。"
       },
       "PublishConfigBody": {
         "properties": {
@@ -1170,7 +1186,8 @@
           "dataId",
           "content"
         ],
-        "title": "PublishConfigBody"
+        "title": "PublishConfigBody",
+        "description": "发布 Nacos 配置时的请求体。"
       },
       "PublishConfigResponse": {
         "properties": {
@@ -1188,7 +1205,8 @@
           "success",
           "message"
         ],
-        "title": "PublishConfigResponse"
+        "title": "PublishConfigResponse",
+        "description": "发布 Nacos 配置的响应。"
       },
       "ValidationError": {
         "properties": {

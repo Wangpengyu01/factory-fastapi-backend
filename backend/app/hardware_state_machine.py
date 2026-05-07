@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+"""硬件状态机模拟器。
+
+当前真实硬件还没有全部接入，后端先用这个模块模拟门禁、道闸、摄像机、
+烟感、温感、报警器等设备状态。后续接真实硬件时，业务接口仍然读取统一
+的设备快照结构，只替换 provider，不改 8083 前端接口。
+"""
+
 import random
 import threading
 from dataclasses import dataclass, field
@@ -10,11 +17,13 @@ from typing import Any
 SHANGHAI_TZ = timezone(timedelta(hours=8))
 
 
+# 在线状态枚举，对应前端状态筛选和设备状态统计。
 ONLINE = "online"
 OFFLINE = "offline"
 FAULT = "fault"
 MAINTENANCE = "maintenance"
 
+# 工作状态枚举，描述设备当前动作或业务状态。
 NORMAL = "normal"
 OPEN = "open"
 CLOSED = "closed"
@@ -24,11 +33,17 @@ WARNING = "warning"
 
 
 def now_iso() -> str:
+    """返回上海时区 ISO 时间，所有模拟设备时间字段统一使用它。"""
     return datetime.now(SHANGHAI_TZ).replace(microsecond=0).isoformat()
 
 
 @dataclass(frozen=True)
 class DeviceProfile:
+    """设备类型配置。
+
+    每类硬件通过 profile 定义名称、单位、数值范围、告警阈值和随机变化概率。
+    """
+
     device_type: str
     display_name: str
     unit: str | None = None
@@ -45,6 +60,11 @@ class DeviceProfile:
 
 @dataclass
 class HardwareDevice:
+    """单个硬件设备的状态快照。
+
+    这里保存的是后端和前端都能识别的统一状态，不绑定具体厂商协议。
+    """
+
     device_id: str
     name: str
     area_id: str
@@ -62,6 +82,7 @@ class HardwareDevice:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def snapshot(self) -> dict[str, Any]:
+        """导出给 API 返回的 JSON 字段，字段名保持前端约定的 camelCase。"""
         return {
             "id": self.device_id,
             "name": self.name,
@@ -84,8 +105,16 @@ class HardwareDevice:
 
 
 class HardwareStateMachineSimulator:
+    """内存版硬件状态机模拟器。
+
+    负责初始化一批模拟设备、按 tick 推进状态、接收模拟控制命令、
+    并聚合成 8083 设备状态组件需要的统计结构。
+    """
+
     def __init__(self, *, seed: int | None = None) -> None:
+        # Random 支持传 seed，方便测试时复现状态变化。
         self._random = random.Random(seed)
+        # FastAPI 可能并发访问模拟器，RLock 用于保护内存设备状态。
         self._lock = threading.RLock()
         self._tick_no = 0
         self._devices: dict[str, HardwareDevice] = {}
@@ -93,6 +122,7 @@ class HardwareStateMachineSimulator:
 
     @property
     def tick_no(self) -> int:
+        """当前状态推进次数。"""
         with self._lock:
             return self._tick_no
 
@@ -103,6 +133,7 @@ class HardwareStateMachineSimulator:
         device_type: str | None = None,
         online_status: str | None = None,
     ) -> list[dict[str, Any]]:
+        """导出设备快照列表，并支持按区域、设备类型、在线状态过滤。"""
         with self._lock:
             devices = list(self._devices.values())
 
@@ -118,11 +149,16 @@ class HardwareStateMachineSimulator:
         return result
 
     def get_device(self, device_id: str) -> dict[str, Any] | None:
+        """按设备 ID 查询单个设备快照。"""
         with self._lock:
             device = self._devices.get(device_id)
             return device.snapshot() if device else None
 
     def tick(self, *, steps: int = 1) -> dict[str, Any]:
+        """推进模拟器状态。
+
+        steps 限制在 1 到 100，避免一次请求推进过多导致接口阻塞。
+        """
         steps = max(1, min(steps, 100))
         with self._lock:
             for _ in range(steps):
@@ -146,6 +182,7 @@ class HardwareStateMachineSimulator:
         reason: str = "",
         payload: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
+        """给模拟设备下发控制命令，并返回命令前后的状态。"""
         with self._lock:
             device = self._devices.get(device_id)
             if not device:
@@ -154,6 +191,7 @@ class HardwareStateMachineSimulator:
             command = command.strip().lower()
             before = device.snapshot()
 
+            # 通用状态命令：用于联调离线、故障、维护、告警等状态。
             if command == "recover":
                 device.online_status = ONLINE
                 device.alarm_status = NORMAL
@@ -179,6 +217,7 @@ class HardwareStateMachineSimulator:
                 if device.online_status == ONLINE:
                     device.work_status = ALARM
             elif command in {"open", "close", "lock", "unlock", "reset"}:
+                # 控制类命令：用于门禁、道闸、联动门等设备。
                 self._apply_control_command(device, command)
             else:
                 return {
@@ -190,6 +229,7 @@ class HardwareStateMachineSimulator:
             device.sequence += 1
             device.last_changed_at = now_iso()
             device.last_heartbeat_at = now_iso()
+            # 保存最后一次命令信息，方便前端详情页或后端日志排查。
             device.metadata["lastCommand"] = {
                 "command": command,
                 "operator": operator,
@@ -206,6 +246,7 @@ class HardwareStateMachineSimulator:
             }
 
     def aggregate_device_status_records(self) -> list[dict[str, Any]]:
+        """聚合成 8083 设备状态组件需要的 region/device/online/offline 结构。"""
         buckets: dict[tuple[str, str], dict[str, Any]] = {}
         with self._lock:
             devices = list(self._devices.values())
@@ -229,6 +270,7 @@ class HardwareStateMachineSimulator:
         return sorted(buckets.values(), key=lambda item: (item["region"], item["device"]))
 
     def summary(self) -> dict[str, Any]:
+        """返回模拟器整体统计，用于模拟器管理页和联调检查。"""
         with self._lock:
             devices = list(self._devices.values())
 
@@ -249,6 +291,7 @@ class HardwareStateMachineSimulator:
         }
 
     def _advance_device(self, device: HardwareDevice) -> None:
+        """推进单个设备状态，包括离线、故障、恢复、数值游走和告警。"""
         changed = False
         profile = device.profile
         rnd = self._random.random
@@ -256,6 +299,7 @@ class HardwareStateMachineSimulator:
         device.sequence += 1
         device.last_heartbeat_at = now_iso()
 
+        # 在线设备有小概率离线、故障，否则按设备类型继续推进业务状态。
         if device.online_status == ONLINE:
             if rnd() < profile.offline_rate:
                 device.online_status = OFFLINE
@@ -270,12 +314,14 @@ class HardwareStateMachineSimulator:
             else:
                 changed = self._advance_online_device(device) or changed
         elif device.online_status in {OFFLINE, FAULT, MAINTENANCE}:
+            # 离线、故障、维护设备有一定概率自动恢复，方便演示状态流转。
             if rnd() < profile.recover_rate:
                 device.online_status = ONLINE
                 device.work_status = self._normal_work_status(device)
                 device.alarm_status = NORMAL
                 changed = True
 
+        # 电量和信号只做轻微随机波动，模拟无线传感器的真实表现。
         if device.battery is not None and self._random.random() < 0.05:
             device.battery = max(0, min(100, device.battery + self._random.choice([-1, 0, 1])))
 
@@ -286,10 +332,12 @@ class HardwareStateMachineSimulator:
             device.last_changed_at = now_iso()
 
     def _advance_online_device(self, device: HardwareDevice) -> bool:
+        """推进在线设备的业务状态。"""
         changed = False
         profile = device.profile
 
         if profile.min_value is not None and profile.max_value is not None:
+            # 传感器类设备按数值范围随机游走，并按阈值判断告警。
             current = device.value
             if current is None:
                 current = self._random.uniform(profile.min_value, profile.max_value)
@@ -317,6 +365,7 @@ class HardwareStateMachineSimulator:
             return changed
 
         if self._random.random() < profile.alarm_rate:
+            # 非数值类设备按概率进入告警态。
             device.alarm_status = ALARM
             device.work_status = ALARM
             changed = True
@@ -328,6 +377,7 @@ class HardwareStateMachineSimulator:
         return changed
 
     def _apply_control_command(self, device: HardwareDevice, command: str) -> None:
+        """执行 open/close/lock/unlock/reset 等控制类命令。"""
         if command == "open":
             device.work_status = OPEN
             device.online_status = ONLINE
@@ -350,11 +400,16 @@ class HardwareStateMachineSimulator:
             device.alarm_status = NORMAL
 
     def _normal_work_status(self, device: HardwareDevice) -> str:
+        """从设备类型配置里随机选择一个正常工作状态。"""
         if device.profile.normal_statuses:
             return self._random.choice(device.profile.normal_statuses)
         return NORMAL
 
     def _seed_defaults(self) -> None:
+        """初始化默认模拟设备。
+
+        这里模拟了多个区域、多种设备类型，数量用于支撑 8083 前端联调。
+        """
         profiles = {
             "door": DeviceProfile(
                 "door",
@@ -437,6 +492,7 @@ class HardwareStateMachineSimulator:
         profile: DeviceProfile,
         index: int,
     ) -> None:
+        """按区域和设备类型添加一台模拟设备。"""
         device_id = f"{profile.device_type}_{area_id}_{index:03d}"
         value = None
         if profile.min_value is not None and profile.max_value is not None:
@@ -458,4 +514,5 @@ class HardwareStateMachineSimulator:
         self._devices[device_id] = device
 
 
+# 全局单例：FastAPI 路由直接使用它读取和推进模拟设备状态。
 SIMULATOR = HardwareStateMachineSimulator()

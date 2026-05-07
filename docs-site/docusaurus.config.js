@@ -1,5 +1,6 @@
 // @ts-check
 
+// Docusaurus 文档站配置：用于发布团队 API 文档和 Scalar OpenAPI 页面。
 const config = {
   title: "Factory API Docs",
   tagline: "DOC-2026.05.07：8083 Vue + Vite 前端保留，FastAPI 后端从零到一落地",
@@ -38,6 +39,7 @@ const config = {
   themeConfig: {
     navbar: {
       title: "Factory API Docs",
+      // 顶部导航只放团队最常用入口，详细目录放到 sidebars.js。
       items: [
         { to: "/docs/intro", label: "文档入口", position: "left" },
         { to: "/docs/version-guide", label: "版本说明", position: "left" },
@@ -47,6 +49,7 @@ const config = {
     },
     footer: {
       style: "dark",
+      // 页脚用于快速回到文档入口和接口契约。
       links: [
         {
           title: "文档",

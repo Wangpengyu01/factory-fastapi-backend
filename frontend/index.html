@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nacos API Bridge Demo</title>
+    <style>
+      :root {
+        --bg: #f2f4f8;
+        --card: #ffffff;
+        --text: #12263a;
+        --primary: #0f6cbd;
+        --danger: #b42318;
+      }
+      body {
+        margin: 0;
+        background: linear-gradient(130deg, #eaf4ff 0%, var(--bg) 50%, #f6fff0 100%);
+        color: var(--text);
+        font-family: "Segoe UI", "PingFang SC", "Microsoft Yahei", sans-serif;
+      }
+      .wrap {
+        max-width: 860px;
+        margin: 24px auto;
+        padding: 0 16px;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(15, 108, 189, 0.08);
+        padding: 20px;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 24px;
+      }
+      .row {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+      input,
+      textarea,
+      button {
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 8px;
+        border: 1px solid #d0d5dd;
+        padding: 10px;
+        font-size: 14px;
+      }
+      textarea {
+        min-height: 220px;
+        resize: vertical;
+      }
+      .btns {
+        display: grid;
+        gap: 12px;
+        margin: 12px 0;
+        grid-template-columns: 1fr 1fr;
+      }
+      button {
+        cursor: pointer;
+        color: #fff;
+        border: none;
+        background: var(--primary);
+      }
+      button:last-child {
+        background: #2e844a;
+      }
+      .status {
+        margin-top: 12px;
+        font-size: 14px;
+      }
+      .ok {
+        color: #067647;
+      }
+      .err {
+        color: var(--danger);
+      }
+      @media (max-width: 760px) {
+        .row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>Nacos Config API Integration</h1>
+        <div class="row">
+          <div>
+            <label for="dataId">dataId (optional for full read)</label>
+            <input id="dataId" placeholder="leave empty to read all configs" />
+          </div>
+          <div>
+            <label for="group">group</label>
+            <input id="group" value="DEFAULT_GROUP" />
+          </div>
+          <div>
+            <label for="tenant">tenant (namespaceId, optional)</label>
+            <input id="tenant" placeholder="optional" />
+          </div>
+          <div>
+            <label for="field">field (optional, e.g. a.b.c)</label>
+            <input id="field" placeholder="optional" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 12px">
+          <div style="grid-column: span 2">
+            <label for="publishKey">publish key (X-Publish-Key)</label>
+            <input id="publishKey" type="password" placeholder="required for publish" />
+          </div>
+        </div>
+
+        <div style="margin-top: 12px">
+          <label for="content">Config content</label>
+          <textarea id="content" placeholder="Load from Nacos or edit and publish"></textarea>
+        </div>
+
+        <div class="btns">
+          <button id="btnLoad">Load Config</button>
+          <button id="btnPublish">Publish Config</button>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+    </div>
+
+    <script>
+      const el = (id) => document.getElementById(id);
+      const statusEl = el("status");
+
+      function setStatus(text, ok = true) {
+        statusEl.className = `status ${ok ? "ok" : "err"}`;
+        statusEl.textContent = text;
+      }
+
+      function buildQuery() {
+        const params = new URLSearchParams({
+          group: el("group").value.trim() || "DEFAULT_GROUP",
+        });
+        const dataId = el("dataId").value.trim();
+        params.set("dataId", dataId);
+        const tenant = el("tenant").value.trim();
+        if (tenant) params.set("tenant", tenant);
+        const field = el("field").value.trim();
+        if (field) params.set("field", field);
+        return params.toString();
+      }
+
+      async function loadConfig() {
+        try {
+          setStatus("Loading config...");
+          const resp = await fetch(`/api/nacos/config?${buildQuery()}`);
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.detail || "Load failed");
+          if (data.mode === "all") {
+            el("content").value = JSON.stringify(
+              {
+                total: data.total,
+                mergedParams: data.mergedParams,
+                items: data.items,
+              },
+              null,
+              2
+            );
+            setStatus(`Load success (all mode, total=${data.total ?? 0})`);
+          } else {
+            el("content").value = data.content || "";
+            setStatus("Load success (single mode)");
+          }
+        } catch (err) {
+          setStatus(`Load failed: ${err.message}`, false);
+        }
+      }
+
+      async function publishConfig() {
+        try {
+          const dataId = el("dataId").value.trim();
+          if (!dataId) {
+            throw new Error("dataId is required for publish");
+          }
+          const publishKey = el("publishKey").value.trim();
+          if (!publishKey) {
+            throw new Error("publish key is required");
+          }
+
+          setStatus("Publishing config...");
+          const body = {
+            dataId,
+            group: el("group").value.trim() || "DEFAULT_GROUP",
+            tenant: el("tenant").value.trim() || null,
+            type: "yaml",
+            content: el("content").value,
+          };
+          const resp = await fetch("/api/nacos/config", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Publish-Key": publishKey,
+            },
+            body: JSON.stringify(body),
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.detail || "Publish failed");
+          setStatus("Publish success");
+        } catch (err) {
+          setStatus(`Publish failed: ${err.message}`, false);
+        }
+      }
+
+      el("btnLoad").addEventListener("click", loadConfig);
+      el("btnPublish").addEventListener("click", publishConfig);
+    </script>
+  </body>
+</html>

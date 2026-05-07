@@ -1,0 +1,22 @@
+services:
+  nacos-api:
+    build:
+      context: ./backend
+    container_name: nacos-api
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  nacos-web:
+    build:
+      context: ./frontend
+    container_name: nacos-web
+    depends_on:
+      - nacos-api
+    ports:
+      - "9000:80"
+    restart: unless-stopped

@@ -1,0 +1,107 @@
+@import "@scalar/api-reference-react/style.css";
+
+:root {
+  --ifm-color-primary: #155eef;
+  --ifm-color-primary-dark: #0f4ed0;
+  --ifm-color-primary-darker: #0c43b5;
+  --ifm-color-primary-darkest: #073481;
+  --ifm-color-primary-light: #3d7bff;
+  --ifm-color-primary-lighter: #6b99ff;
+  --ifm-color-primary-lightest: #d9e5ff;
+  --ifm-code-font-size: 92%;
+  --ifm-table-border-color: #d8dee8;
+}
+
+html[data-theme="dark"] {
+  --ifm-background-color: #111827;
+  --ifm-navbar-background-color: #0f172a;
+  --ifm-footer-background-color: #0f172a;
+}
+
+.heroBanner {
+  padding: 56px 0 44px;
+  background: #0f172a;
+  color: #fff;
+}
+
+.heroBanner__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.heroBanner h1 {
+  font-size: 44px;
+  line-height: 1.12;
+  margin: 0 0 16px;
+}
+
+.heroBanner p {
+  max-width: 760px;
+  font-size: 18px;
+  line-height: 1.7;
+  margin: 0 0 24px;
+  color: #dbeafe;
+}
+
+.quickGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 32px auto;
+  max-width: 1100px;
+  padding: 0 24px;
+}
+
+.quickCard {
+  border: 1px solid var(--ifm-table-border-color);
+  border-radius: 8px;
+  padding: 20px;
+  color: inherit;
+  text-decoration: none;
+  background: var(--ifm-background-surface-color);
+}
+
+.quickCard:hover {
+  text-decoration: none;
+  border-color: var(--ifm-color-primary);
+}
+
+.quickCard h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.quickCard p {
+  margin: 0;
+  color: var(--ifm-color-content-secondary);
+}
+
+.scalarShell {
+  min-height: calc(100vh - 120px);
+}
+
+.openapiLinks {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ifm-table-border-color);
+  background: var(--ifm-background-color);
+  font-size: 14px;
+}
+
+.scalarShell :where(.scalar-api-reference) {
+  --scalar-font: var(--ifm-font-family-base);
+}
+
+@media (max-width: 768px) {
+  .heroBanner h1 {
+    font-size: 32px;
+  }
+
+  .quickGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,40 @@
+const sidebars = {
+  tutorialSidebar: [
+    {
+      type: "category",
+      label: "版本与入口",
+      items: ["intro", "version-guide"]
+    },
+    {
+      type: "category",
+      label: "落地任务书",
+      items: [
+        "backend-full-landing-task-book",
+        "frontend-full-landing-task-book"
+      ]
+    },
+    {
+      type: "category",
+      label: "当前已落地",
+      items: [
+        "backend-current-api",
+        "hardware-state-machine-simulator"
+      ]
+    },
+    {
+      type: "category",
+      label: "接口契约",
+      items: [
+        "team-api-contract",
+        "complete-api-doc"
+      ]
+    },
+    {
+      type: "category",
+      label: "从零搭建",
+      items: ["developer-rebuild"]
+    }
+  ]
+};
+
+module.exports = sidebars;

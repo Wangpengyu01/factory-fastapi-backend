@@ -3,7 +3,7 @@ services:
   nacos:
     image: nacos/nacos-server:latest
     container_name: factory-nacos
-    command:
+    entrypoint:
       - sh
       - -c
       - |
@@ -11,7 +11,7 @@ services:
         nacos.core.api.compatibility.client.enabled=true
         nacos.core.api.compatibility.console.enabled=true
         EOF
-        sh /home/nacos/bin/docker-startup.sh
+        exec sh /home/nacos/bin/docker-startup.sh
     environment:
       MODE: standalone
       PREFER_HOST_MODE: hostname

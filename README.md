@@ -28,6 +28,7 @@ docs-site/    Docusaurus + Scalar 文档站源码
 ## 文档入口
 
 - 运行 Nacos 配置桥和 Python 模拟设备：`RUN_NACOS_BRIDGE_AND_SIMULATOR.md`
+- 服务器 Docker 全量部署：`deploy/README_SERVER_DOCKER.md`
 - 当前后端已落地接口：`BACKEND_CURRENT_IMPLEMENTED_API_DOC.md`
 - 硬件状态机模拟器设计：`HARDWARE_STATE_MACHINE_SIMULATOR.md`
 

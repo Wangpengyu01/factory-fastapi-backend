@@ -1,0 +1,48 @@
+services:
+  # Nacos 配置中心：服务器单机部署，供 FastAPI 配置桥在 Docker 网络内访问。
+  nacos:
+    image: nacos/nacos-server:latest
+    container_name: factory-nacos
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      NACOS_AUTH_ENABLE: "false"
+    ports:
+      # 默认只允许服务器本机访问 Nacos 控制台，避免公网裸露未鉴权控制台。
+      - "127.0.0.1:8848:8848"
+      - "127.0.0.1:9848:9848"
+    volumes:
+      - nacos-data:/home/nacos/data
+      - nacos-logs:/home/nacos/logs
+    restart: unless-stopped
+
+  # FastAPI 后端服务：Nacos 配置桥、8083 设备状态接口、Python 模拟设备都在这里。
+  nacos-api:
+    build:
+      context: ./backend
+    container_name: nacos-api
+    env_file:
+      - ./deploy/server.env
+    environment:
+      # 服务端部署时走 Docker service name，不要用 127.0.0.1。
+      NACOS_BASE_URL: http://nacos:8848/nacos
+    depends_on:
+      - nacos
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  # 静态演示前端：通过 Nginx 把 /api 反向代理到 nacos-api。
+  nacos-web:
+    build:
+      context: ./frontend
+    container_name: nacos-web
+    depends_on:
+      - nacos-api
+    ports:
+      - "9000:80"
+    restart: unless-stopped
+
+volumes:
+  nacos-data:
+  nacos-logs:

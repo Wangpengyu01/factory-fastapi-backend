@@ -7,6 +7,14 @@ services:
       MODE: standalone
       PREFER_HOST_MODE: hostname
       NACOS_AUTH_ENABLE: "false"
+      # 新版 Nacos 镜像启动时要求提供 token/identity，即使关闭鉴权也需要给合法值。
+      NACOS_AUTH_TOKEN: "ZmFjdG9yeS1mYXN0YXBpLW5hY29zLXNlcnZlci10b2tlbi0zMi1ieXRlcy1taW4="
+      NACOS_AUTH_IDENTITY_KEY: "serverIdentity"
+      NACOS_AUTH_IDENTITY_VALUE: "factory-fastapi-backend"
+      # 树莓派内存更紧，单机开发部署不需要默认 1G 堆。
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+      JVM_XMN: 256m
     ports:
       # 默认只允许服务器本机访问 Nacos 控制台，避免公网裸露未鉴权控制台。
       - "127.0.0.1:8848:8848"

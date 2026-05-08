@@ -3,6 +3,15 @@ services:
   nacos:
     image: nacos/nacos-server:latest
     container_name: factory-nacos
+    command:
+      - sh
+      - -c
+      - |
+        cat >> /home/nacos/conf/application.properties <<'EOF'
+        nacos.core.api.compatibility.client.enabled=true
+        nacos.core.api.compatibility.console.enabled=true
+        EOF
+        sh /home/nacos/bin/docker-startup.sh
     environment:
       MODE: standalone
       PREFER_HOST_MODE: hostname
@@ -15,10 +24,6 @@ services:
       JVM_XMS: 512m
       JVM_XMX: 512m
       JVM_XMN: 256m
-      # 本后端当前使用 Nacos /v1/cs/configs，Nacos 3.x latest 需要打开兼容开关。
-      JAVA_OPT_EXT: >-
-        -Dnacos.core.api.compatibility.client.enabled=true
-        -Dnacos.core.api.compatibility.console.enabled=true
     ports:
       # 默认只允许服务器本机访问 Nacos 控制台，避免公网裸露未鉴权控制台。
       - "127.0.0.1:8848:8848"

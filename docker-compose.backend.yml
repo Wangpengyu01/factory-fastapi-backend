@@ -1,0 +1,17 @@
+services:
+  # 只启动本仓库后端：Nacos 配置桥、设备状态接口、Python 模拟设备。
+  # 适用于服务器上已经有 Nacos 容器或已有 Nacos 服务的场景。
+  backend:
+    build:
+      context: ./backend
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.tuna.tsinghua.edu.cn/simple}
+    container_name: factory-fastapi-backend
+    env_file:
+      - ./deploy/backend.env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    extra_hosts:
+      # 如果 Nacos 跑在服务器宿主机上，backend.env 可用 host.docker.internal 访问。
+      - "host.docker.internal:host-gateway"

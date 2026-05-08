@@ -59,6 +59,7 @@ app.add_middleware(
 NACOS_BASE_URL = os.getenv("NACOS_BASE_URL", "http://127.0.0.1:8848/nacos").rstrip("/")
 NACOS_USERNAME = os.getenv("NACOS_USERNAME", "").strip()
 NACOS_PASSWORD = os.getenv("NACOS_PASSWORD", "").strip()
+NACOS_API_VERSION = os.getenv("NACOS_API_VERSION", "v1").strip().lower()
 PUBLISH_API_KEY = os.getenv("PUBLISH_API_KEY", "").strip()
 
 
@@ -556,6 +557,31 @@ async def _nacos_request(
 
 async def _get_single_config_content(data_id: str, group: str, tenant: str | None) -> str:
     """读取单个 Nacos 配置内容。"""
+    if NACOS_API_VERSION == "v3":
+        query: dict[str, Any] = {"dataId": data_id, "groupName": group}
+        if tenant:
+            query["namespaceId"] = tenant
+
+        resp = await _nacos_request(
+            "GET",
+            "/v3/console/cs/config",
+            query=query,
+            include_nacos_auth=False,
+        )
+        if resp.status_code >= 400:
+            raise HTTPException(
+                status_code=resp.status_code,
+                detail=f"Nacos read config failed: {resp.text}",
+            )
+        try:
+            payload = resp.json()
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Unexpected Nacos v3 response: {resp.text}") from exc
+        if payload.get("code") != 0:
+            raise HTTPException(status_code=502, detail=f"Nacos read config failed: {resp.text}")
+        data = payload.get("data") or {}
+        return str(data.get("content", ""))
+
     query: dict[str, Any] = {"dataId": data_id, "group": group}
     if tenant:
         query["tenant"] = tenant
@@ -639,22 +665,38 @@ async def get_config(
             value=value,
         )
 
-    list_query: dict[str, Any] = {
-        "search": "blur",
-        "dataId": "",
-        "group": group,
-        "pageNo": page_no,
-        "pageSize": page_size,
-    }
-    if tenant:
-        list_query["tenant"] = tenant
-
-    resp = await _nacos_request(
-        "GET",
-        "/v1/cs/configs",
-        query=list_query,
-        include_nacos_auth=False,
-    )
+    if NACOS_API_VERSION == "v3":
+        list_query: dict[str, Any] = {
+            "search": "blur",
+            "dataId": "",
+            "groupName": group,
+            "pageNo": page_no,
+            "pageSize": page_size,
+        }
+        if tenant:
+            list_query["namespaceId"] = tenant
+        resp = await _nacos_request(
+            "GET",
+            "/v3/console/cs/config/list",
+            query=list_query,
+            include_nacos_auth=False,
+        )
+    else:
+        list_query = {
+            "search": "blur",
+            "dataId": "",
+            "group": group,
+            "pageNo": page_no,
+            "pageSize": page_size,
+        }
+        if tenant:
+            list_query["tenant"] = tenant
+        resp = await _nacos_request(
+            "GET",
+            "/v1/cs/configs",
+            query=list_query,
+            include_nacos_auth=False,
+        )
     if resp.status_code >= 400:
         raise HTTPException(
             status_code=resp.status_code,
@@ -666,7 +708,11 @@ async def get_config(
     except Exception:
         raise HTTPException(status_code=502, detail=f"Unexpected list response: {resp.text}")
 
-    raw_items = payload.get("pageItems") or []
+    list_payload = payload.get("data") if NACOS_API_VERSION == "v3" else payload
+    if not isinstance(list_payload, dict):
+        raise HTTPException(status_code=502, detail=f"Unexpected list response: {resp.text}")
+
+    raw_items = list_payload.get("pageItems") or []
     items: list[ConfigItem] = []
     merged_params: dict[str, Any] = {}
 
@@ -675,8 +721,8 @@ async def get_config(
         if not item_data_id:
             continue
 
-        item_group = str(raw_item.get("group", group))
-        item_tenant = raw_item.get("tenant")
+        item_group = str(raw_item.get("groupName" if NACOS_API_VERSION == "v3" else "group", group))
+        item_tenant = raw_item.get("namespaceId" if NACOS_API_VERSION == "v3" else "tenant")
 
         content = raw_item.get("content")
         if content is None:
@@ -964,31 +1010,53 @@ async def publish_config(
     """发布配置到 Nacos，必须携带正确的 X-Publish-Key。"""
     _check_publish_key(x_publish_key)
 
-    form: dict[str, Any] = {
-        "dataId": body.data_id,
-        "group": body.group,
-        "content": body.content,
-        "type": body.config_type,
-    }
-    if body.tenant:
-        form["tenant"] = body.tenant
-
-    resp = await _nacos_request(
-        "POST",
-        "/v1/cs/configs",
-        form=form,
-        include_nacos_auth=True,
-    )
+    if NACOS_API_VERSION == "v3":
+        form: dict[str, Any] = {
+            "dataId": body.data_id,
+            "groupName": body.group,
+            "content": body.content,
+            "type": body.config_type,
+        }
+        if body.tenant:
+            form["namespaceId"] = body.tenant
+        resp = await _nacos_request(
+            "POST",
+            "/v3/console/cs/config",
+            form=form,
+            include_nacos_auth=True,
+        )
+    else:
+        form = {
+            "dataId": body.data_id,
+            "group": body.group,
+            "content": body.content,
+            "type": body.config_type,
+        }
+        if body.tenant:
+            form["tenant"] = body.tenant
+        resp = await _nacos_request(
+            "POST",
+            "/v1/cs/configs",
+            form=form,
+            include_nacos_auth=True,
+        )
     if resp.status_code >= 400:
         raise HTTPException(
             status_code=resp.status_code,
             detail=f"Nacos publish config failed: {resp.text}",
         )
 
-    # Nacos 2.x / older v1 API returns "true"; Nacos 3.x compatibility can
-    # return HTTP 200 with an empty body after a successful publish.
-    response_text = resp.text.strip().lower()
-    success = response_text in {"", "true"}
+    if NACOS_API_VERSION == "v3":
+        try:
+            payload = resp.json()
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Unexpected Nacos v3 response: {resp.text}") from exc
+        success = payload.get("code") == 0 and payload.get("data") is True
+    else:
+        # Nacos 2.x / older v1 API returns "true"; some compatibility layers can
+        # return HTTP 200 with an empty body after a successful publish.
+        response_text = resp.text.strip().lower()
+        success = response_text in {"", "true"}
     if not success:
         raise HTTPException(status_code=502, detail=f"Nacos publish failed: {resp.text}")
 

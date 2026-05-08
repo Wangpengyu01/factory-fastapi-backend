@@ -1,8 +1,7 @@
 services:
   # Nacos 配置中心：服务器单机部署，供 FastAPI 配置桥在 Docker 网络内访问。
   nacos:
-    # 固定 2.x：当前 FastAPI 后端使用 /v1/cs/configs，避免 Nacos 3.x latest 兼容差异。
-    image: nacos/nacos-server:v2.3.2
+    image: nacos/nacos-server:latest
     container_name: factory-nacos
     environment:
       MODE: standalone
@@ -35,6 +34,8 @@ services:
     environment:
       # 服务端部署时走 Docker service name，不要用 127.0.0.1。
       NACOS_BASE_URL: http://nacos:8848/nacos
+      # Nacos latest 是 3.x，后端使用 /v3/console/cs/config API。
+      NACOS_API_VERSION: v3
     depends_on:
       - nacos
     ports:

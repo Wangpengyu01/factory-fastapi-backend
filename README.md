@@ -25,6 +25,12 @@ docs-site/    Docusaurus + Scalar 文档站源码
 *.md          项目交付和接口文档
 ```
 
+## 文档入口
+
+- 运行 Nacos 配置桥和 Python 模拟设备：`RUN_NACOS_BRIDGE_AND_SIMULATOR.md`
+- 当前后端已落地接口：`BACKEND_CURRENT_IMPLEMENTED_API_DOC.md`
+- 硬件状态机模拟器设计：`HARDWARE_STATE_MACHINE_SIMULATOR.md`
+
 ## Python 版本
 
 推荐 Python `3.12`。
@@ -49,6 +55,16 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - Swagger: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
 - Health: `http://localhost:8000/api/health`
+
+## Nacos 配置桥和 Python 模拟设备
+
+当前 Nacos 配置桥和 Python 硬件状态机模拟器都挂在同一个 FastAPI 服务里：
+
+- Nacos 配置桥：`GET/POST /api/nacos/config`
+- Python 模拟器：`GET/POST /api/simulator/*`
+- 8083 设备状态聚合：`GET /api/device-status/*`
+
+完整运行步骤见 [RUN_NACOS_BRIDGE_AND_SIMULATOR.md](RUN_NACOS_BRIDGE_AND_SIMULATOR.md)。
 
 ## 版本管理
 
@@ -75,4 +91,3 @@ python backend/scripts/generate_openapi.py
 - 安装 Python 依赖
 - 编译后端 Python 文件
 - 重新生成 OpenAPI
-

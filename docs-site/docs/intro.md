@@ -40,6 +40,7 @@ slug: /intro
 - [后端现阶段 API 落地文档](./backend-current-api)
 - [硬件状态机与硬件接入落地文档](./hardware-state-machine-simulator)
 - [8082/8083 API 契约](./team-api-contract)
+- [技术协议功能对照与缺口 API 补充文档](./protocol-api-gap-and-supplement)
 - [完整 API 文档](./complete-api-doc)
 - [Scalar OpenAPI](/openapi)
 - [OpenAPI JSON](https://wpengu.top/openapi.json)

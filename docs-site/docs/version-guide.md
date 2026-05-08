@@ -33,6 +33,7 @@ slug: /version-guide
 | [后端现阶段 API 落地文档](./backend-current-api) | `DOC-BE-CURRENT-1.1` | `API-CURRENT-0.1` | 当前已经可运行的后端接口说明 |
 | [硬件状态机与硬件接入落地文档](./hardware-state-machine-simulator) | `DOC-SIM-1.2` | `SIM-0.1` + `SIM-0.2` | 硬件状态抽象、模拟器接口、真实硬件接入任务 |
 | [8082/8083 API 契约](./team-api-contract) | `DOC-CONTRACT-1.1` | `OPENAPI-8082-CURRENT-2026.05.07` | 前后端字段、状态码、返回结构契约 |
+| [技术协议功能对照与缺口 API 补充文档](./protocol-api-gap-and-supplement) | `DOC-PROTOCOL-GAP-0.0.2` | `API-TARGET-1.0` | 技术协议功能点与现有 API 覆盖情况对照 |
 | [完整 API 文档](./complete-api-doc) | `DOC-API-FULL-2.1` | `API-TARGET-1.0` | 全量 API 汇总和接口清单 |
 
 ## 3. 状态定义

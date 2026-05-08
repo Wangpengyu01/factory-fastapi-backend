@@ -27,6 +27,7 @@ const sidebars = {
       label: "接口契约",
       items: [
         "team-api-contract",
+        "protocol-api-gap-and-supplement",
         "complete-api-doc"
       ]
     },

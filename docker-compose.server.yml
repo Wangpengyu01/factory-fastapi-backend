@@ -7,6 +7,7 @@ services:
       - sh
       - -c
       - |
+        printf '\n' >> /home/nacos/conf/application.properties
         cat >> /home/nacos/conf/application.properties <<'EOF'
         nacos.core.api.compatibility.client.enabled=true
         nacos.core.api.compatibility.console.enabled=true

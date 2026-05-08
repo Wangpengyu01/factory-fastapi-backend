@@ -985,7 +985,10 @@ async def publish_config(
             detail=f"Nacos publish config failed: {resp.text}",
         )
 
-    success = resp.text.strip().lower() == "true"
+    # Nacos 2.x / older v1 API returns "true"; Nacos 3.x compatibility can
+    # return HTTP 200 with an empty body after a successful publish.
+    response_text = resp.text.strip().lower()
+    success = response_text in {"", "true"}
     if not success:
         raise HTTPException(status_code=502, detail=f"Nacos publish failed: {resp.text}")
 

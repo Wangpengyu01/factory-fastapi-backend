@@ -3,6 +3,13 @@ services:
   nacos:
     image: nacos/nacos-server:latest
     container_name: factory-nacos
+    entrypoint:
+      - sh
+      - -c
+      - |
+        sed -i 's/^nacos.core.auth.admin.enabled=.*/nacos.core.auth.admin.enabled=false/' /home/nacos/conf/application.properties
+        sed -i 's/^nacos.core.auth.console.enabled=.*/nacos.core.auth.console.enabled=false/' /home/nacos/conf/application.properties
+        exec sh /home/nacos/bin/docker-startup.sh
     environment:
       MODE: standalone
       PREFER_HOST_MODE: hostname
@@ -17,6 +24,7 @@ services:
       JVM_XMN: 256m
     ports:
       # 默认只允许服务器本机访问 Nacos 控制台，避免公网裸露未鉴权控制台。
+      - "127.0.0.1:8080:8080"
       - "127.0.0.1:8848:8848"
       - "127.0.0.1:9848:9848"
     volumes:
@@ -32,8 +40,8 @@ services:
     env_file:
       - ./deploy/server.env
     environment:
-      # 服务端部署时走 Docker service name，不要用 127.0.0.1。
-      NACOS_BASE_URL: http://nacos:8848/nacos
+      # Nacos 3.x HTTP API 在 8080，服务端部署时走 Docker service name。
+      NACOS_BASE_URL: http://nacos:8080
       # Nacos latest 是 3.x，后端使用 /v3/console/cs/config API。
       NACOS_API_VERSION: v3
     depends_on:

@@ -1,18 +1,9 @@
 services:
   # Nacos 配置中心：服务器单机部署，供 FastAPI 配置桥在 Docker 网络内访问。
   nacos:
-    image: nacos/nacos-server:latest
+    # 固定 2.x：当前 FastAPI 后端使用 /v1/cs/configs，避免 Nacos 3.x latest 兼容差异。
+    image: nacos/nacos-server:v2.3.2
     container_name: factory-nacos
-    entrypoint:
-      - sh
-      - -c
-      - |
-        printf '\n' >> /home/nacos/conf/application.properties
-        cat >> /home/nacos/conf/application.properties <<'EOF'
-        nacos.core.api.compatibility.client.enabled=true
-        nacos.core.api.compatibility.console.enabled=true
-        EOF
-        exec sh /home/nacos/bin/docker-startup.sh
     environment:
       MODE: standalone
       PREFER_HOST_MODE: hostname

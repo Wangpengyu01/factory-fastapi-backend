@@ -486,8 +486,52 @@
           "dashboard"
         ],
         "summary": "Get dashboard overview",
-        "description": "Return the minimum overview payload required by the retained 8083 frontend.",
+        "description": "Return dashboard overview plus center scene, event board, event list, and risk warnings.",
         "operationId": "get_dashboard_overview_api_dashboard_overview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/aggregate": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get full dashboard aggregate payload",
+        "description": "Alias of /api/dashboard/overview for frontend teams that want an explicit aggregate endpoint.",
+        "operationId": "get_dashboard_aggregate_api_dashboard_aggregate_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/subsystems": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get dashboard footer subsystem links",
+        "description": "Return the four footer subsystem entries. URLs come from SUBSYSTEM_* env vars and never default to localhost.",
+        "operationId": "get_subsystems_api_subsystems_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -668,6 +712,66 @@
               "minimum": 1,
               "default": 1,
               "title": "Steps"
+            }
+          },
+          {
+            "name": "syncNacos",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Syncnacos"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulator/nacos-sync": {
+      "post": {
+        "tags": [
+          "hardware-simulator"
+        ],
+        "summary": "Publish simulator snapshot to Nacos",
+        "description": "手动把 Python 模拟设备快照写入 Nacos，必须携带 X-Publish-Key。",
+        "operationId": "sync_simulator_to_nacos_api_simulator_nacos_sync_post",
+        "parameters": [
+          {
+            "name": "X-Publish-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Publish-Key"
             }
           }
         ],

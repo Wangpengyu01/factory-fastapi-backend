@@ -7,13 +7,13 @@ export default function Home() {
   return (
     <Layout
       title="Factory API Docs"
-      description="DOC-2026.05.07：8083 Vue + Vite 前端保留，FastAPI 后端从零到一落地。"
+      description="DOC-2026.05.08：8083 Vue + Vite 前端保留，FastAPI 已补齐大屏聚合与 Nacos 模拟器链路。"
     >
       <header className="heroBanner">
         <div className="heroBanner__inner">
           <h1>Factory API Docs</h1>
           <p>
-            当前文档集版本为 DOC-2026.05.07。8083 Vue + Vite 前端入口保留，后端按 FastAPI 从零到一落地，接口契约按 API-CURRENT-0.1 和 API-TARGET-1.0 区分。
+            当前文档集版本为 DOC-2026.05.08。8083 Vue + Vite 前端入口保留，后端已补齐大屏聚合接口和 Python 模拟器写 Nacos 链路，接口契约按 API-CURRENT-0.2 和 API-TARGET-1.0 区分。
           </p>
           <Link className="button button--primary button--lg" to="/docs/version-guide">
             查看版本说明
@@ -37,7 +37,15 @@ export default function Home() {
         </Link>
         <Link className="quickCard" to="/docs/backend-current-api">
           <h2>当前已落地 API</h2>
-          <p>API-CURRENT-0.1 已运行接口、请求响应、curl 示例和后续实现边界。</p>
+          <p>API-CURRENT-0.2 已运行接口、请求响应、curl 示例和后续实现边界。</p>
+        </Link>
+        <Link className="quickCard" to="/docs/dashboard-aggregate-nacos-chain-api">
+          <h2>大屏聚合接口</h2>
+          <p>补齐中心区域、事件看板、风险预警，以及模拟器写 Nacos 的完整链路。</p>
+        </Link>
+        <Link className="quickCard" to="/docs/frontend-gap-api-completion">
+          <h2>前端缺口 API</h2>
+          <p>中间主画面、右侧三个面板、底部子系统入口和默认接口模式的补齐口径。</p>
         </Link>
         <Link className="quickCard" to="/docs/hardware-state-machine-simulator">
           <h2>硬件模拟器</h2>

@@ -8,11 +8,11 @@ slug: /team-api-contract
 
 | 项 | 值 |
 |---|---|
-| 文档版本 | `DOC-CONTRACT-1.1` |
-| 文档集 | `DOC-2026.05.07` |
-| 适用系统版本 | `LEGACY-FE-8083` + `OPENAPI-8082-CURRENT-2026.05.07` |
+| 文档版本 | `DOC-CONTRACT-1.2` |
+| 文档集 | `DOC-2026.05.08` |
+| 适用系统版本 | `LEGACY-FE-8083` + `OPENAPI-8082-CURRENT-2026.05.08` |
 | 当前状态 | 前后端联调契约 |
-| 更新日期 | `2026-05-07` |
+| 更新日期 | `2026-05-08` |
 
 整理日期：`2026-05-06`
 
@@ -77,6 +77,8 @@ fetch("/api/device-status/records?regionId=all&deviceType=all")
 | `GET` | `/api/device-status/records` | `{ records, updatedAt }` |
 
 `GET /api/dashboard/overview` 当前使用标准包装，前端读取时取 `response.data`。
+
+本轮新增的 `GET /api/dashboard/aggregate` 是 8083 大屏后续主接口，字段覆盖顶部指标、设备状态、中间区域态势、事件看板、事件列表、风险预警、硬件快照和底部子系统入口。底部四个子系统也可通过 `GET /api/subsystems` 单独读取，具体字段以 [大屏聚合与 Nacos 链路补齐 API](./dashboard-aggregate-nacos-chain-api) 为准。
 
 ### 1.4 分页结构
 

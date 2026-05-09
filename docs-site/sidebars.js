@@ -10,6 +10,7 @@ const sidebars = {
       type: "category",
       label: "落地任务书",
       items: [
+        "fastapi-8082-rebuild-task-book",
         "backend-full-landing-task-book",
         "frontend-full-landing-task-book"
       ]
@@ -19,6 +20,7 @@ const sidebars = {
       label: "当前已落地",
       items: [
         "backend-current-api",
+        "api-compliance-gap-101-8082",
         "dashboard-aggregate-nacos-chain-api",
         "frontend-gap-api-completion",
         "hardware-state-machine-simulator"

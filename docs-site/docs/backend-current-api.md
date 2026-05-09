@@ -8,11 +8,11 @@ slug: /backend-current-api
 
 | 项 | 值 |
 |---|---|
-| 文档版本 | `DOC-BE-CURRENT-1.1` |
-| 文档集 | `DOC-2026.05.07` |
-| 适用系统版本 | `API-CURRENT-0.1` + `SIM-0.1` |
+| 文档版本 | `DOC-BE-CURRENT-1.2` |
+| 文档集 | `DOC-2026.05.08` |
+| 适用系统版本 | `API-CURRENT-0.2` + `SIM-0.1` |
 | 当前状态 | 当前已落地接口说明 |
-| 更新日期 | `2026-05-07` |
+| 更新日期 | `2026-05-08` |
 
 整理日期：`2026-05-07`
 
@@ -31,14 +31,17 @@ slug: /backend-current-api
 | OpenAPI 导出 | 已落地 | `backend/openapi.json` |
 | 健康检查 | 已落地 | `GET /api/health` |
 | 8083 大屏概览 | 已落地 | `GET /api/dashboard/overview` |
+| 大屏完整聚合 | 已落地 | `GET /api/dashboard/aggregate` |
+| 底部子系统入口 | 已落地 | `GET /api/subsystems` |
 | 设备状态筛选项 | 已落地 | `GET /api/device-status/options` |
 | 设备状态汇总 | 已落地 | `GET /api/device-status/summary` |
 | 设备状态明细 | 已落地 | `GET /api/device-status/records` |
 | Nacos 配置读取 | 已落地 | `GET /api/nacos/config` |
 | Nacos 配置发布 | 已落地 | `POST /api/nacos/config` |
 | 硬件状态机模拟器 | 已落地 | `/api/simulator/*` |
+| 模拟器写 Nacos | 已落地 | `POST /api/simulator/nacos-sync` |
 
-当前已落地接口共 `12` 个操作。
+当前已落地接口共 `15` 个操作。
 
 ## 2. 代码位置
 
@@ -85,6 +88,7 @@ http://localhost:8000/api/health
 ```env
 PORT=8000
 NACOS_BASE_URL=http://127.0.0.1:8848/nacos
+NACOS_API_VERSION=v1
 NACOS_USERNAME=
 NACOS_PASSWORD=
 CORS_ALLOWED_ORIGINS=http://localhost:9000,http://localhost:8083
@@ -92,6 +96,17 @@ PUBLISH_API_KEY=change-this-to-a-strong-key
 USE_STATE_MACHINE_SIMULATOR=true
 SIMULATOR_AUTO_TICK=true
 SIMULATOR_TICK_SECONDS=5
+SIMULATOR_NACOS_SYNC_ENABLED=true
+SIMULATOR_NACOS_DATA_ID=factory.hardware.snapshot.json
+DEVICE_STATUS_SOURCE=nacos
+DEVICE_STATUS_NACOS_DATA_ID=factory.hardware.snapshot.json
+DEVICE_STATUS_NACOS_FIELD=deviceStatus.records
+NACOS_READ_FALLBACK_TO_SIMULATOR=true
+SUBSYSTEM_BASE_URL=
+SUBSYSTEM_FACE_URL=
+SUBSYSTEM_VEHICLE_URL=
+SUBSYSTEM_RAIL_URL=
+SUBSYSTEM_FIRE_URL=
 ```
 
 变量说明：
@@ -100,6 +115,7 @@ SIMULATOR_TICK_SECONDS=5
 |---|---|
 | `PORT` | 后端端口 |
 | `NACOS_BASE_URL` | Nacos 地址 |
+| `NACOS_API_VERSION` | Nacos API 版本，2.x/2.5.1 用 `v1`，3.x 用 `v3` |
 | `NACOS_USERNAME` | Nacos 用户名，未开启鉴权可留空 |
 | `NACOS_PASSWORD` | Nacos 密码，未开启鉴权可留空 |
 | `CORS_ALLOWED_ORIGINS` | 允许跨域来源 |
@@ -107,6 +123,17 @@ SIMULATOR_TICK_SECONDS=5
 | `USE_STATE_MACHINE_SIMULATOR` | 是否启用硬件状态机模拟器 |
 | `SIMULATOR_AUTO_TICK` | 是否自动推进模拟状态 |
 | `SIMULATOR_TICK_SECONDS` | 自动推进间隔，单位秒 |
+| `SIMULATOR_NACOS_SYNC_ENABLED` | 是否把模拟器快照写入 Nacos |
+| `SIMULATOR_NACOS_DATA_ID` | 模拟器写入 Nacos 的 dataId |
+| `DEVICE_STATUS_SOURCE` | 设备状态数据源，`simulator`/`demo`/`nacos` |
+| `DEVICE_STATUS_NACOS_DATA_ID` | FastAPI 默认读取的 Nacos dataId |
+| `DEVICE_STATUS_NACOS_FIELD` | 从 Nacos 文档中提取设备记录的字段 |
+| `NACOS_READ_FALLBACK_TO_SIMULATOR` | Nacos 不可用时是否回退模拟器 |
+| `SUBSYSTEM_BASE_URL` | 四个子系统同域入口基地址，未配置单项 URL 时使用 |
+| `SUBSYSTEM_FACE_URL` | 人脸识别子系统地址 |
+| `SUBSYSTEM_VEHICLE_URL` | 车辆管控子系统地址 |
+| `SUBSYSTEM_RAIL_URL` | 行车管控子系统地址 |
+| `SUBSYSTEM_FIRE_URL` | 火灾算法子系统地址 |
 
 ## 5. 响应结构规则
 
@@ -139,6 +166,8 @@ SIMULATOR_TICK_SECONDS=5
 |---|---|---|---|
 | `GET` | `/api/health` | system | 服务探活 |
 | `GET` | `/api/dashboard/overview` | dashboard | 8083 大屏概览 |
+| `GET` | `/api/dashboard/aggregate` | dashboard | 大屏完整聚合数据 |
+| `GET` | `/api/subsystems` | dashboard | 底部四个子系统入口 |
 | `GET` | `/api/device-status/options` | device-status | 设备状态筛选项 |
 | `GET` | `/api/device-status/summary` | device-status | 设备状态汇总 |
 | `GET` | `/api/device-status/records` | device-status | 设备状态明细 |
@@ -149,6 +178,7 @@ SIMULATOR_TICK_SECONDS=5
 | `GET` | `/api/simulator/devices/{device_id}` | hardware-simulator | 模拟硬件详情 |
 | `POST` | `/api/simulator/tick` | hardware-simulator | 手动推进模拟状态 |
 | `POST` | `/api/simulator/devices/{device_id}/command` | hardware-simulator | 对模拟硬件下发命令 |
+| `POST` | `/api/simulator/nacos-sync` | hardware-simulator | 手动写入 Nacos 快照 |
 
 ## 7. System API
 
@@ -179,7 +209,8 @@ curl "http://localhost:8000/api/health"
 用途：
 
 - 给 `8083` 前端提供大屏核心指标。
-- 当前开启状态机模拟器后，设备统计来自模拟器聚合。
+- 当前已扩展为完整聚合数据，兼容旧字段，并返回中心区域、事件看板、事件列表、风险预警。
+- 开启 `DEVICE_STATUS_SOURCE=nacos` 后，数据来自 Nacos 中的模拟器快照；Nacos 不可用时可回退模拟器。
 
 返回：
 
@@ -225,6 +256,51 @@ curl：
 
 ```bash
 curl "http://localhost:8000/api/dashboard/overview"
+```
+
+### 8.2 大屏完整聚合
+
+`GET /api/dashboard/aggregate`
+
+用途：
+
+- 给前端首屏一次性返回所有大屏数据。
+- 避免右侧事件、风险预警、中间区域态势由前端到处拼接口。
+- 字段结构详见 [大屏聚合与 Nacos 链路补齐 API](./dashboard-aggregate-nacos-chain-api)。
+
+核心字段：
+
+```text
+data.centerScene
+data.areas
+data.eventBoard
+data.eventList
+data.riskWarnings
+data.deviceStatus
+data.hardware
+data.subsystems
+```
+
+curl：
+
+```bash
+curl "http://localhost:8000/api/dashboard/aggregate"
+```
+
+### 8.3 底部子系统入口
+
+`GET /api/subsystems`
+
+用途：
+
+- 返回大屏底部四个子系统入口：人脸识别、车辆管控、行车管控、火灾算法。
+- URL 从 `SUBSYSTEM_*` 环境变量读取，默认不回退 `localhost`。
+- 未配置 URL 时 `enabled=false`，前端应置灰。
+
+curl：
+
+```bash
+curl "http://localhost:8000/api/subsystems"
 ```
 
 ## 9. Device Status API
@@ -580,14 +656,32 @@ Query：
 | 参数 | 类型 | 默认 | 限制 | 说明 |
 |---|---|---|---|---|
 | `steps` | `number` | `1` | `1-100` | 推进步数 |
+| `syncNacos` | `boolean` | `false` | - | 推进后是否立即写入 Nacos |
 
 curl：
 
 ```bash
 curl -X POST "http://localhost:8000/api/simulator/tick?steps=10"
+curl -X POST "http://localhost:8000/api/simulator/tick?steps=1&syncNacos=true"
 ```
 
-### 11.5 模拟硬件命令
+### 11.5 手动写入 Nacos 快照
+
+`POST /api/simulator/nacos-sync`
+
+用途：
+
+- 把当前 Python 模拟器硬件快照写入 Nacos。
+- 需要请求头 `X-Publish-Key`。
+
+curl：
+
+```bash
+curl -X POST "http://localhost:8000/api/simulator/nacos-sync" \
+  -H "X-Publish-Key: 你的PUBLISH_API_KEY"
+```
+
+### 11.6 模拟硬件命令
 
 `POST /api/simulator/devices/{device_id}/command`
 

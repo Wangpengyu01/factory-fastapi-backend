@@ -19,6 +19,8 @@ const sidebars = {
       label: "当前已落地",
       items: [
         "backend-current-api",
+        "dashboard-aggregate-nacos-chain-api",
+        "frontend-gap-api-completion",
         "hardware-state-machine-simulator"
       ]
     },

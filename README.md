@@ -12,7 +12,7 @@
 | 后端 | FastAPI，从零到一重建 |
 | API 调用 | 前端统一走 `/api/...` |
 | Nacos | 只作为配置中心，不作为业务数据库 |
-| 硬件状态 | 当前使用 Python 状态机模拟，后续接真实硬件 provider |
+| 硬件状态 | 当前使用 Python 状态机模拟，可写入 Nacos 后由 FastAPI 统一读取 |
 | 文档站 | `https://wpengu.top/` |
 | OpenAPI | `https://wpengu.top/openapi/` |
 
@@ -31,6 +31,7 @@ docs-site/    Docusaurus + Scalar 文档站源码
 - 只部署后端 Docker：`deploy/README_BACKEND_ONLY_DOCKER.md`
 - 服务器 Docker 全量部署：`deploy/README_SERVER_DOCKER.md`
 - 当前后端已落地接口：`BACKEND_CURRENT_IMPLEMENTED_API_DOC.md`
+- 大屏聚合与 Nacos 链路补齐：`DASHBOARD_AGGREGATE_NACOS_CHAIN_API.md`
 - 硬件状态机模拟器设计：`HARDWARE_STATE_MACHINE_SIMULATOR.md`
 
 ## Python 版本
@@ -65,6 +66,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - Nacos 配置桥：`GET/POST /api/nacos/config`
 - Python 模拟器：`GET/POST /api/simulator/*`
 - 8083 设备状态聚合：`GET /api/device-status/*`
+- 8083 大屏完整聚合：`GET /api/dashboard/aggregate`
+- 8083 底部子系统入口：`GET /api/subsystems`
 
 完整运行步骤见 [RUN_NACOS_BRIDGE_AND_SIMULATOR.md](RUN_NACOS_BRIDGE_AND_SIMULATOR.md)。
 

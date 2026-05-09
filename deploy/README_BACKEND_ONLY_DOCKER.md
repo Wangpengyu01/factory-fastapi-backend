@@ -8,6 +8,8 @@
 - Python 模拟设备：`/api/simulator/*`
 - 设备状态聚合：`/api/device-status/*`
 - Dashboard 概览：`/api/dashboard/overview`
+- 大屏聚合：`/api/dashboard/aggregate`
+- 底部子系统入口：`/api/subsystems`
 
 ## 1. 准备配置
 
@@ -39,6 +41,21 @@ NACOS_BASE_URL=http://NACOS服务器IP:8848/nacos
 ```env
 CORS_ALLOWED_ORIGINS=http://你的服务器IP:8000,http://你的服务器IP:9000,http://你的服务器IP:8083
 PUBLISH_API_KEY=换成强密码
+
+# 现有服务器 Nacos 2.5.1 用 v1。
+NACOS_API_VERSION=v1
+
+# 形成链路：Python 模拟器 -> Nacos -> FastAPI -> 8083 大屏。
+SIMULATOR_NACOS_SYNC_ENABLED=true
+DEVICE_STATUS_SOURCE=nacos
+DEVICE_STATUS_NACOS_DATA_ID=factory.hardware.snapshot.json
+
+# 底部四个子系统入口；不配置时返回 enabled=false，前端不要回退 localhost。
+SUBSYSTEM_BASE_URL=
+SUBSYSTEM_FACE_URL=
+SUBSYSTEM_VEHICLE_URL=
+SUBSYSTEM_RAIL_URL=
+SUBSYSTEM_FIRE_URL=
 ```
 
 ## 2. 启动后端
@@ -90,6 +107,15 @@ docker network connect factory-net factory-fastapi-backend
 curl http://127.0.0.1:8000/api/health
 curl http://127.0.0.1:8000/api/simulator/summary
 curl http://127.0.0.1:8000/api/device-status/records
+curl http://127.0.0.1:8000/api/dashboard/aggregate
+curl http://127.0.0.1:8000/api/subsystems
+```
+
+手动把当前模拟器快照写入 Nacos：
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/simulator/nacos-sync" \
+  -H "X-Publish-Key: 换成强密码"
 ```
 
 测试 Nacos 配置读取：

@@ -139,12 +139,27 @@ docker compose -f docker-compose.server.yml down -v
 curl http://127.0.0.1:8000/api/health
 curl http://127.0.0.1:8000/api/simulator/summary
 curl http://127.0.0.1:8000/api/device-status/records
+curl http://127.0.0.1:8000/api/dashboard/aggregate
+curl http://127.0.0.1:8000/api/subsystems
 ```
 
 手动推进模拟器：
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/api/simulator/tick?steps=10"
+```
+
+手动推进并立刻写入 Nacos：
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/simulator/tick?steps=1&syncNacos=true"
+```
+
+手动把当前模拟器快照写入 Nacos：
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/simulator/nacos-sync" \
+  -H "X-Publish-Key: 你的PUBLISH_API_KEY"
 ```
 
 发布一条 Nacos 配置：

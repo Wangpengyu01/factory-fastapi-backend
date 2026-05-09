@@ -3,7 +3,7 @@
 // Docusaurus 文档站配置：用于发布团队 API 文档和 Scalar OpenAPI 页面。
 const config = {
   title: "Factory API Docs",
-  tagline: "DOC-2026.05.07：8083 Vue + Vite 前端保留，FastAPI 后端从零到一落地",
+  tagline: "DOC-2026.05.08：8083 Vue + Vite 前端保留，FastAPI 补齐大屏聚合与 Nacos 模拟器链路",
   favicon: "img/favicon.ico",
 
   url: "https://wpengu.top",

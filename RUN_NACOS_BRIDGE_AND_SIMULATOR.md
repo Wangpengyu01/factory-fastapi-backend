@@ -28,6 +28,9 @@ PORT=8000
 # 本机直接运行 FastAPI，并且 Nacos 也跑在本机时用这个。
 NACOS_BASE_URL=http://127.0.0.1:8848/nacos
 
+# Nacos 2.x / 2.5.1 用 v1；Nacos 3.x 才用 v3。
+NACOS_API_VERSION=v1
+
 # Nacos 没开鉴权就留空；开了鉴权再填。
 NACOS_USERNAME=
 NACOS_PASSWORD=
@@ -39,6 +42,22 @@ PUBLISH_API_KEY=dev-publish-key
 USE_STATE_MACHINE_SIMULATOR=true
 SIMULATOR_AUTO_TICK=true
 SIMULATOR_TICK_SECONDS=5
+
+# 打开后形成链路：Python 模拟器 -> Nacos -> FastAPI -> 大屏。
+SIMULATOR_NACOS_SYNC_ENABLED=true
+SIMULATOR_NACOS_DATA_ID=factory.hardware.snapshot.json
+SIMULATOR_NACOS_GROUP=DEFAULT_GROUP
+DEVICE_STATUS_SOURCE=nacos
+DEVICE_STATUS_NACOS_DATA_ID=factory.hardware.snapshot.json
+DEVICE_STATUS_NACOS_FIELD=deviceStatus.records
+NACOS_READ_FALLBACK_TO_SIMULATOR=true
+
+# 底部四个子系统入口；不配置时接口返回 enabled=false，前端不要回退 localhost。
+SUBSYSTEM_BASE_URL=
+SUBSYSTEM_FACE_URL=
+SUBSYSTEM_VEHICLE_URL=
+SUBSYSTEM_RAIL_URL=
+SUBSYSTEM_FIRE_URL=
 ```
 
 启动 FastAPI：
@@ -53,6 +72,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - Health: `http://localhost:8000/api/health`
 - 模拟器汇总: `http://localhost:8000/api/simulator/summary`
 - 8083 设备状态: `http://localhost:8000/api/device-status/records`
+- 大屏聚合: `http://localhost:8000/api/dashboard/aggregate`
+- 底部子系统入口: `http://localhost:8000/api/subsystems`
 
 ## 2. Docker Compose 运行
 
@@ -106,6 +127,28 @@ Invoke-RestMethod "http://localhost:8000/api/simulator/devices?areaId=r01&device
 
 ```powershell
 Invoke-RestMethod -Method Post "http://localhost:8000/api/simulator/tick?steps=10"
+```
+
+手动推进并立刻写入 Nacos：
+
+```powershell
+Invoke-RestMethod -Method Post "http://localhost:8000/api/simulator/tick?steps=1&syncNacos=true"
+```
+
+手动把当前模拟器快照写入 Nacos：
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://localhost:8000/api/simulator/nacos-sync" `
+  -Headers @{ "X-Publish-Key" = "dev-publish-key" }
+```
+
+查看大屏聚合数据：
+
+```powershell
+Invoke-RestMethod http://localhost:8000/api/dashboard/aggregate
+Invoke-RestMethod http://localhost:8000/api/subsystems
 ```
 
 给单个模拟设备下发命令：
